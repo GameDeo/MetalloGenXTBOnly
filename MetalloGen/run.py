@@ -15,7 +15,7 @@ import numpy as np
 from MetalloGen import globalvars as gv
 from MetalloGen import om, embed, clean_geometry
 
-from MetalloGen.Calculator import orca, gaussian
+from MetalloGen.Calculator import orca, gaussian, xtb
 
 from MetalloGen.utils import clustering
 
@@ -142,7 +142,7 @@ def main():
 
     args = parser.parse_args()
 
-    smiles = args.smiles
+    smiles = "[Zr+4]|[Cl-:2]|[Cl-:3]|[N:1]1=C(C[C-:4]2[CH:4]=[CH:4][CH:4]=[CH:4]2)C=CC=C1(C[C-:5]3[CH:5]=[CH:5][CH:5]=[CH:5]3)|5_trigonal_bipyramidal"
     input_directory = args.input_directory
     working_directory = args.working_directory
     save_directory = args.save_directory
@@ -161,16 +161,18 @@ def main():
         raise Exception("Please provide either MSMILES string or MOL/SDF file directory ...")
 
     # Set up the calculator
-    #calculator = orca.Orca()
-    if args.calculator == "xtb_gaussian":
-        calculator = gaussian.Gaussian()
-        calculator.switch_to_xtb_gaussian()
-    elif args.calculator == "orca":
-        calculator = orca.Orca()
-    elif args.calculator == "gaussian":
-        calculator = gaussian.Gaussian()
-    else:
-        raise Exception("Invalid calculator ...")
+    calculator = xtb.XTB()
+    # if args.calculator == "xtb_gaussian":
+    #     calculator = gaussian.Gaussian()
+    #     calculator.switch_to_xtb_gaussian()
+    # elif args.calculator == "xtb":
+    #     calculator = xtb.XTB()
+    # elif args.calculator == "orca":
+    #     calculator = orca.Orca()
+    # elif args.calculator == "gaussian":
+    #     calculator = gaussian.Gaussian()
+    # else:
+    #     raise Exception("Invalid calculator ...")
     calculator.change_working_directory(working_directory)
 
     if smiles:

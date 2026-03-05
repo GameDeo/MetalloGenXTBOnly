@@ -182,7 +182,6 @@ def parse_opt(directory): # Read {file_name}.trj.xyz
 
 
 class XTB:
-
     
     def __init__(self,command='orca',working_directory = None):
         # Check xtb
@@ -193,10 +192,10 @@ class XTB:
             exit()
  
         # Also, check orca
-        check = distutils.spawn.find_executable(command)
-        if check is None:
-            print ('orca not found!')
-            exit()
+        # check = distutils.spawn.find_executable(command)
+        # if check is None:
+        #     print ('orca not found!')
+        #     exit()
         
         self.command = command
         self.nproc=1
@@ -390,6 +389,9 @@ class XTB:
         original_content = self.content
         self.make_input([molecule],chg,multiplicity,file_name=file_name,extra=extra)
         os.system(f'{self.command} {file_name}.com > {file_name}.log')
+        force = []
+        hessian = []
+
         bohr_to_angstrom = 0.529177 # Units are Hartree/bohr in chkpoint file
         if force is None:
             if self.error_directory is not None:
