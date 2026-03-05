@@ -287,25 +287,44 @@ class MetallogenInterface:
                 sdf_path = os.path.join(self.save_directory, f"{file_base}.sdf")
                 
                 try:
-                    # Use the built-in MetalloGen converter
-                    rd_mol = ace_mol.get_rd_mol3D() 
+                    from rdkit import Chem
+                    from rdkit.Chem import EditableMol, Mol
                     
-                    if rd_mol:
-                        # Apply the safety mask to ignore metal valence/lone-pair math
-                        Chem.SanitizeMol(rd_mol, catchErrors=True, 
-                                         sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ 
-                                                     Chem.SanitizeFlags.SANITIZE_PROPERTIES)
-                        
-                        writer = Chem.SDWriter(sdf_path)
-                        writer.write(rd_mol)
-                        writer.close()
-                        print(f"SDF SUCCESS: {sdf_path}")
-                    else:
-                        raise ValueError("get_rd_mol3D returned None")
+                    # 1. Start fresh
+                    emol = EditableMol(Mol())
+                    atoms = ace_mol.get_atom_list()
+                    
+                    # 2. Add Atoms
+                    for atom in atoms:
+                        emol.AddAtom(Chem.Atom(atom.get_element()))
+                    
+                    # 3. Add Bonds from Adjacency Matrix
+                    # adj_matrix is a 2D array where matrix[i][j] > 0 means a bond
+                    adj = ace_mol.get_adj_matrix()
+                    num_atoms = len(atoms)
+                    for i in range(num_atoms):
+                        for j in range(i + 1, num_atoms):
+                            if adj[i][j] > 0:
+                                # We use SINGLE to ensure RDKit doesn't crash on metal valency
+                                emol.AddBond(i, j, Chem.rdchem.BondType.SINGLE)
+                    
+                    # 4. Finalize and set coords
+                    rd_mol = emol.GetMol()
+                    conf = Chem.Conformer(num_atoms)
+                    for idx, atom in enumerate(atoms):
+                        pos = atom.get_coordinates()
+                        conf.SetAtomPosition(idx, (float(pos[0]), float(pos[1]), float(pos[2])))
+                    rd_mol.AddConformer(conf)
+
+                    # 5. Write to Disk
+                    writer = Chem.SDWriter(sdf_path)
+                    writer.write(rd_mol)
+                    writer.close()
+                    print(f"MANUAL SDF SUCCESS: {sdf_path}")
                         
                 except Exception as e:
-                    print(f"SDF export failed: {e}. Falling back to XYZ.")
-                    # Fallback to your original XYZ writing
+                    print(f"Manual SDF build failed: {e}. Falling back to XYZ.")
+                    # Keep your old XYZ writing code here
                     content = f"{len(ace_mol.atom_list)}\n{ace_mol.chg}\t{ace_mol.multiplicity}\t{relaxed_energy}\n"
                     for atom in ace_mol.atom_list:
                         content += atom.get_content()
